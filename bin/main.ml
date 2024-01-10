@@ -31,7 +31,7 @@ let tc_with_error tm =
 
 let eval_with_error tm =
   try
-    let v = Eval.eval Ast.Env.empty tm in
+    let v = Eval.eval Ast.Env.empty tm (fun v -> v) in
     Printf.printf "%s\n" (Ast.show_value v)
   with
   | Err.EvalError msg -> Printf.printf "eval error: %s\n" msg

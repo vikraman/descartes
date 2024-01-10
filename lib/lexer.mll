@@ -35,6 +35,10 @@ rule read =
     | "case" { CASE }
     | "of" { OF }
     | "|" { BAR }
+    | "co" { CO }
+    | "\\~" { LAMBDABAR }
+    | "λ~" { LAMBDABAR }
+    | "@" { AT }
     | "#" { skip_line lexbuf }
     | string { IDENT (lexeme lexbuf) }
     | int { INT (int_of_string (lexeme lexbuf)) }

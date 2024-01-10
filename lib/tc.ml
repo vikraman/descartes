@@ -83,6 +83,32 @@ let rec synth ctx tm =
      | _ ->
        let msg = Printf.sprintf "expected a sum, got %s" (show_ty ty_tm) in
        raise @@ TypeError msg)
+  | CoAbs (name, ty, body) ->
+    (match ty with
+     | TDual ty_covar ->
+       let ctx' = Ctx.assume ctx name ty in
+       let ty_body = synth ctx' body in
+       TSum (ty_covar, ty_body)
+     | _ ->
+       let msg = Printf.sprintf "expected a dual type, got %s" (show_ty ty) in
+       raise @@ TypeError msg)
+  | CoApp (cofn, arg) ->
+    let ty_cofn = synth ctx cofn in
+    (match ty_cofn with
+     | TSum (ty_inl, ty_inr) ->
+       if check ctx arg (TDual ty_inl)
+       then ty_inr
+       else (
+         let msg =
+           Printf.sprintf
+             "expected argument of type %s, got %s"
+             (show_ty @@ TDual ty_inl)
+             (show_ty (synth ctx arg))
+         in
+         raise @@ TypeError msg)
+     | _ ->
+       let msg = Printf.sprintf "expected a sum, got %s" (show_ty ty_cofn) in
+       raise @@ TypeError msg)
 
 and check ctx tm ty =
   match tm with

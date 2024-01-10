@@ -1,4 +1,5 @@
 (executable
  (public_name descartes)
  (name main)
- (libraries descartes))
+ (libraries descartes)
+ (modes byte native))

@@ -3,12 +3,17 @@
 %}
 
 %token <string> IDENT
-%token LPAREN RPAREN LAMBDA DOT COLON ARROW STAR COMMA TINT UNIT FST SND INL INR CASE OF BAR
 %token <int> INT
-%token PLUS
+%token TINT UNIT
+%token STAR ARROW PLUS CO
+%token LAMBDA LAMBDABAR
+%token DOT COLON COMMA AT
+%token FST SND INL INR CASE OF BAR
+%token LPAREN RPAREN
 %token END EOF
 
-%left PLUS
+%left STAR PLUS AT
+%right ARROW
 
 %start <tm option> prog
 %%
@@ -23,9 +28,11 @@ let line_end := END | EOF
 let ty :=
   | TINT; { TInt }
   | UNIT; { TUnit }
-  | LPAREN; t1=ty; STAR; t2=ty; RPAREN; { TProd (t1, t2) }
-  | LPAREN; t1=ty; ARROW; t2=ty; RPAREN; { TArrow (t1, t2) }
-  | LPAREN; t1=ty; PLUS; t2=ty; RPAREN; { TSum (t1, t2) }
+  | t1=ty; STAR; t2=ty; { TProd (t1, t2) }
+  | t1=ty; ARROW; t2=ty; { TArrow (t1, t2) }
+  | t1=ty; PLUS; t2=ty; { TSum (t1, t2) }
+  | CO; t=ty; { TDual t }
+  | LPAREN; t=ty; RPAREN; { t }
 
 let expr :=
   | i = INT; { Int i }
@@ -41,3 +48,5 @@ let expr :=
   | INL; t = ty; e = expr; { Inl (t, e) }
   | INR; t = ty; e = expr; { Inr (t, e) }
   | CASE; e = expr; OF; x1 = IDENT; DOT; e1 = expr; BAR; x2 = IDENT; DOT; e2 = expr; { Case (e, x1, e1, x2, e2) }
+  | LAMBDABAR; x = IDENT; COLON; t = ty; DOT; e = expr; { CoAbs (x, t, e) }
+  | e1 = expr; AT; e2 = expr; { CoApp (e1, e2) }
