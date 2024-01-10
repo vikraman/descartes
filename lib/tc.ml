@@ -5,9 +5,16 @@ let rec synth ctx tm =
   match tm with
   | Int _ -> TInt
   | Plus (lhs, rhs) ->
-    let _ = check ctx lhs TInt in
-    let _ = check ctx rhs TInt in
-    TInt
+    if check ctx lhs TInt && check ctx rhs TInt
+    then TInt
+    else (
+      let msg =
+        Printf.sprintf
+          "expected both sides of + to be ints, got %s and %s"
+          (show_ty (synth ctx lhs))
+          (show_ty (synth ctx rhs))
+      in
+      raise @@ TypeError msg)
   | Var name -> Ctx.lookup ctx name
   | Abs (name, ty, body) ->
     let ctx' = Ctx.assume ctx name ty in
@@ -17,8 +24,16 @@ let rec synth ctx tm =
     let ty_fn = synth ctx fn in
     (match ty_fn with
      | TArrow (ty_arg, ty_body) ->
-       let _ = check ctx arg ty_arg in
-       ty_body
+       if check ctx arg ty_arg
+       then ty_body
+       else (
+         let msg =
+           Printf.sprintf
+             "expected argument of type %s, got %s"
+             (show_ty ty_arg)
+             (show_ty (synth ctx arg))
+         in
+         raise @@ TypeError msg)
      | _ ->
        let msg = Printf.sprintf "expected a function, got %s" (show_ty ty_fn) in
        raise @@ TypeError msg)
