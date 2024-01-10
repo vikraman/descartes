@@ -1,0 +1,12 @@
+(library
+ (name descartes)
+ (public_name descartes)
+ (preprocess
+  (pps ppx_deriving.show))
+ (flags
+  (:standard -w -66)))
+
+(menhir
+ (modules parser))
+
+(ocamllex lexer)
