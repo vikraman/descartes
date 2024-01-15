@@ -1,4 +1,5 @@
-name: Builds, tests & co
+name: tests
+run-name: Builds, tests & co
 
 on:
   - pull_request

@@ -1,4 +1,5 @@
-name: Opam Dependency Submission
+name: opam
+run-name: Opam Dependency Submission
 
 on:
   - push
