@@ -1,24 +1,23 @@
-open OUnit2
 open Descartes
 
-let test_parser str expected _test_ctxt =
+let test_parser str expected =
   let lexbuf = Lexing.from_string str in
   let ast = Parser.prog Lexer.read lexbuf in
   match ast with
-  | None -> assert_failure "Parser failed"
-  | Some actual -> assert_equal expected actual ~printer:Ast.show_tm
+  | None -> Alcotest.fail "parse error"
+  | Some actual -> Alcotest.(check @@ of_pp Ast.pp_tm) "same" expected actual
 ;;
 
-let test_tc tm expected _test_ctxt =
+let test_tc tm expected =
   let actual = Tc.synth Ctx.empty tm in
-  assert_equal expected actual ~printer:Ast.show_ty
+  Alcotest.(check @@ of_pp Ast.pp_ty) "same" expected actual
 ;;
 
-let test_eval tm expected _test_ctxt =
+let test_eval tm expected =
   let actual =
     Ast.value_to_tm @@ Eval.eval Ast.Env.empty Ast.CoEnv.empty tm (fun v -> v)
   in
-  assert_equal expected actual ~printer:Ast.show_tm
+  Alcotest.(check @@ of_pp Ast.pp_tm) "same" expected actual
 ;;
 
 open Ast
@@ -119,18 +118,21 @@ let test_eval_cases =
 ;;
 
 let suite =
-  "DescartesTestSuite"
-  >::: [ "test_parser"
-         >::: List.map
-                (fun (str, expected) -> str >:: test_parser str expected)
-                test_parser_cases
-       ; "test_tc"
-         >::: List.map (fun (tm, ty) -> Ast.show_tm tm >:: test_tc tm ty) test_tc_cases
-       ; "test_eval"
-         >::: List.map
-                (fun (tm, expected) -> Ast.show_tm tm >:: test_eval tm expected)
-                test_eval_cases
-       ]
+  let open Alcotest in
+  [ ( "test_parser"
+    , List.map
+        (fun (str, expected) -> test_case str `Quick (fun () -> test_parser str expected))
+        test_parser_cases )
+  ; ( "test_tc"
+    , List.map
+        (fun (tm, ty) -> test_case (Ast.show_tm tm) `Quick (fun () -> test_tc tm ty))
+        test_tc_cases )
+  ; ( "test_eval"
+    , List.map
+        (fun (tm, expected) ->
+          test_case (Ast.show_tm tm) `Quick (fun () -> test_eval tm expected))
+        test_eval_cases )
+  ]
 ;;
 
-let () = run_test_tt_main suite
+let () = Alcotest.run "descartes test stuite" suite
