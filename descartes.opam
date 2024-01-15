@@ -11,7 +11,7 @@ doc: "https://github.com/vikraman/descartes"
 bug-reports: "https://github.com/vikraman/descartes/issues"
 depends: [
   "ocaml"
-  "dune" {>= "3.12"}
+  "dune" {>= "3.0"}
   "menhir"
   "ppx_deriving"
   "alcotest" {with-test}
