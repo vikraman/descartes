@@ -1,4 +1,4 @@
-(lang dune 3.12)
+(lang dune 3.0)
 
 (name descartes)
 
@@ -19,7 +19,12 @@
  (name descartes)
  (synopsis "An interpreter for lambda-lambda-bar")
  (description "An interpreter for the lambda-lambda-bar calculus")
- (depends ocaml dune menhir ppx_deriving ounit2)
+ (depends
+  ocaml
+  dune
+  menhir
+  ppx_deriving
+  (alcotest :with-test))
  (tags
   (lambda-calculus interpreter programming-languages)))
 
