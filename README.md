@@ -20,6 +20,17 @@ $ dune exec bin/main.exe
 ~> 1 : int
 ```
 
+## Acknowledgements
+
+gpt-4-1106
+
+## Related
+
+- https://github.com/dignissimus/coexp
+- https://github.com/vikraman/sml-coexp
+- https://github.com/vikraman/hs-coexp
+- https://github.com/vikraman/agda-coexp
+
 ## Trivia
 
 The name is a tribute to Descartes for his theory of Cartesian dualism.
