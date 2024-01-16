@@ -21,26 +21,16 @@ let parse_with_error lexbuf =
     None
 ;;
 
-let tc_with_error tm =
+let tc_and_eval_with_error tm =
   try
     let ty = Tc.synth Ctx.empty tm in
-    Printf.printf "   %s : %s\n" (Ast.show_tm tm) (Ast.show_ty ty)
+    Printf.printf "   %s : %s\n" (Ast.show_tm tm) (Ast.show_ty ty);
+    let v = Eval.eval Ast.Env.empty Ast.CoEnv.empty tm (fun v -> v) in
+    let ty' = Tc.synth Ctx.empty (Ast.value_to_tm v) in
+    Printf.printf "~> %s : %s\n" (Ast.show_value v) (Ast.show_ty ty')
   with
   | Err.TypeError msg -> Printf.printf "type error: %s\n" msg
-;;
-
-let eval_with_error tm =
-  try
-    let v = Eval.eval Ast.Env.empty Ast.CoEnv.empty tm (fun v -> v) in
-    let ty = Tc.synth Ctx.empty (Ast.value_to_tm v) in
-    Printf.printf "~> %s : %s\n" (Ast.show_value v) (Ast.show_ty ty)
-  with
   | Err.EvalError msg -> Printf.printf "eval error: %s\n" msg
-;;
-
-let tc_and_eval_with_error tm =
-  tc_with_error tm;
-  eval_with_error tm
 ;;
 
 let rec repl () =
