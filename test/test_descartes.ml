@@ -92,6 +92,22 @@ let test_eval_cases =
   ; Abs ("x", TInt, Var "x"), Abs ("x", TInt, Var "x")
   ; App (Abs ("x", TInt, Plus (Var "x", Int 1)), Int 2), Int 3
   ; ( App
+        ( App
+            ( App
+                ( App
+                    ( Abs
+                        ( "g"
+                        , TArrow (TInt, TArrow (TInt, TInt))
+                        , Abs
+                            ( "f"
+                            , TArrow (TInt, TInt)
+                            , Abs ("x", TInt, App (Var "g", App (Var "f", Var "x"))) ) )
+                    , Abs ("x", TInt, Abs ("y", TInt, Plus (Var "x", Var "y"))) )
+                , Abs ("x", TInt, Plus (Var "x", Int 1)) )
+            , Int 0 )
+        , Int 1 )
+    , Int 2 )
+  ; ( App
         ( Abs ("x", TProd (TInt, TInt), Plus (Fst (Var "x"), Snd (Var "x")))
         , Pair (Int 1, Int 2) )
     , Int 3 )
@@ -106,6 +122,10 @@ let test_eval_cases =
   ; CoAbs ("x", TDual TUnit, Int 1), Inr (TUnit, Int 1)
   ; CoAbs ("x", TDual TInt, CoApp (Inl (TInt, Int 1), Var "x")), Inl (TInt, Int 1)
   ; CoAbs ("x", TDual TInt, CoApp (Inr (TInt, Int 1), Var "x")), Inr (TInt, Int 1)
+  ; ( CoAbs ("x", TDual TInt, Plus (Int 2, CoApp (Inl (TInt, Int 1), Var "x")))
+    , Inl (TInt, Int 1) )
+  ; ( CoAbs ("x", TDual TInt, Plus (Int 2, CoApp (Inr (TInt, Int 1), Var "x")))
+    , Inr (TInt, Int 3) )
   ; Case (CoAbs ("x", TDual TInt, Var "x"), "x", Int 0, "y", Int 1), Int 1
   ; ( Case
         ( CoAbs ("x", TDual TInt, Var "x")
@@ -114,6 +134,60 @@ let test_eval_cases =
         , "k"
         , CoApp (Inl (TInt, Int 1), Var "k") )
     , Int 0 )
+  ; Case (CoAbs ("x", TDual TInt, Int 1), "x", Int 0, "k", Var "k"), Int 1
+  ; ( Case
+        ( CoAbs ("x", TDual TInt, CoApp (Inl (TInt, Int 1), Var "x"))
+        , "x"
+        , Var "x"
+        , "y"
+        , Var "y" )
+    , Int 1 )
+  ; ( Case
+        ( CoAbs ("x", TDual TInt, CoApp (Inr (TInt, Int 1), Var "x"))
+        , "x"
+        , Var "x"
+        , "y"
+        , Var "y" )
+    , Int 1 )
+  ; ( Case
+        ( CoAbs ("x", TDual TInt, Var "x")
+        , "x"
+        , Int 0
+        , "k"
+        , CoApp (Inr (TInt, Int 1), Var "k") )
+    , Int 1 )
+  ; Plus (Int 2, Case (Inl (TInt, Int 0), "x", Int 0, "y", Int 1)), Int 2
+  ; Plus (Int 2, Case (Inr (TInt, Int 0), "x", Int 0, "y", Int 1)), Int 3
+  ; ( Plus
+        ( Int 2
+        , Case
+            ( CoAbs ("x", TDual TInt, CoApp (Inl (TInt, Int 0), Var "x"))
+            , "x"
+            , Int 0
+            , "y"
+            , Int 1 ) )
+    , Int 2 )
+  ; ( Plus
+        ( Int 2
+        , Case
+            ( CoAbs ("x", TDual TInt, CoApp (Inr (TInt, Int 0), Var "x"))
+            , "x"
+            , Int 0
+            , "y"
+            , Int 1 ) )
+    , Int 3 )
+  ; Pair (Int 0, CoAbs ("x", TDual TInt, Int 1)), Pair (Int 0, Inr (TInt, Int 1))
+  ; Pair (CoAbs ("x", TDual TInt, Int 1), Int 0), Pair (Inr (TInt, Int 1), Int 0)
+  ; ( Pair (Int 0, CoAbs ("x", TDual TInt, CoApp (Inl (TInt, Int 1), Var "x")))
+    , Pair (Int 0, Inl (TInt, Int 1)) )
+  ; ( Pair (Int 0, CoAbs ("x", TDual TInt, CoApp (Inr (TInt, Int 1), Var "x")))
+    , Pair (Int 0, Inr (TInt, Int 1)) )
+  ; CoAbs ("x", TDual TUnit, CoApp (Inl (TInt, Unit), Var "x")), Inl (TInt, Unit)
+  ; CoAbs ("x", TDual TUnit, CoApp (Inr (TUnit, Int 1), Var "x")), Inr (TUnit, Int 1)
+  ; ( CoAbs ("x", TDual TUnit, Plus (Int 2, CoApp (Inl (TInt, Unit), Var "x")))
+    , Inl (TInt, Unit) )
+  ; ( CoAbs ("x", TDual TUnit, Plus (Int 2, CoApp (Inr (TUnit, Int 1), Var "x")))
+    , Inr (TUnit, Int 3) )
   ]
 ;;
 
@@ -125,7 +199,8 @@ let suite =
         test_parser_cases )
   ; ( "test_tc"
     , List.map
-        (fun (tm, ty) -> test_case (Ast.show_tm tm) `Quick (fun () -> test_tc tm ty))
+        (fun (tm, expected) ->
+          test_case (Ast.show_tm tm) `Quick (fun () -> test_tc tm expected))
         test_tc_cases )
   ; ( "test_eval"
     , List.map
