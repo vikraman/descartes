@@ -72,8 +72,7 @@ let rec eval env coenv tm k =
   | Snd e -> eval env coenv e @@ fun v -> eval_snd env coenv v k
   | Inl (ty, e) -> eval env coenv e @@ fun v -> k @@ VInl (ty, v)
   | Inr (ty, e) -> eval env coenv e @@ fun v -> k @@ VInr (ty, v)
-  | Case (e, x1, e1, x2, e2) ->
-    eval env coenv e @@ fun v -> eval_case env coenv v x1 e1 x2 e2 k
+  | Case (e, x1, e1, x2, e2) -> eval_case env coenv e x1 e1 x2 e2 k
   | CoAbs (x, ty, e) -> eval_coabs env coenv x ty e k
   | CoApp (e1, e2) ->
     eval env coenv e2
@@ -93,9 +92,9 @@ and eval_plus _env _coenv v1 v2 k =
 
 and eval_app _env coenv v1 v2 k =
   match v1 with
-  | VClosure (x, _, e, env') ->
-    let env'' = Env.add x v2 env' in
-    eval env'' coenv e k
+  | VClosure (x, _, e, env) ->
+    let env' = Env.add x v2 env in
+    eval env' coenv e k
   | _ ->
     let msg = Printf.sprintf "expected a closure, got %s" (show_value v1) in
     raise @@ EvalError msg
@@ -114,7 +113,9 @@ and eval_snd _env _coenv v k =
     let msg = Printf.sprintf "expected a pair, got %s" (show_value v) in
     raise @@ EvalError msg
 
-and eval_case env coenv v x1 e1 x2 e2 k =
+and eval_case env coenv e x1 e1 x2 e2 k =
+  eval env coenv e
+  @@ fun v ->
   match v with
   | VInl (_, v1) ->
     let env' = Env.add x1 v1 env in
@@ -122,33 +123,33 @@ and eval_case env coenv v x1 e1 x2 e2 k =
   | VInr (_, v2) ->
     let env' = Env.add x2 v2 env in
     eval env' coenv e2 k
-  | VCoClosure (x, ty, v, _coenv) ->
+  | VCoClosure (x, ty, v) ->
     let x3 = gensym () in
     let e2' = subst x2 (VVar x3) e2 in
     let e' = CoAbs (x, ty, subst x3 v e2') in
-    let e'' = Case (e', x1, e1, x3, Var x3) in
-    eval env coenv e'' k
+    eval_case env coenv e' x1 e1 x3 (Var x3) k
   | _ ->
-    let msg = Printf.sprintf "expected a sum, got %s" (show_value v) in
+    let msg = Printf.sprintf "expected a sum or a coclosure, got %s" (show_value v) in
     raise @@ EvalError msg
 
 and eval_coabs env coenv x ty e k =
-  if is_free x e
+  let coenv' = CoEnv.add x k coenv in
+  if not (is_free x e)
   then (
-    let coenv' = CoEnv.add x k coenv in
-    eval env coenv' e @@ fun v -> k @@ VCoClosure (x, ty, v, CoEnv.empty))
-  else (
     match ty with
-    | TDual ty_covar -> eval env coenv (Inr (ty_covar, e)) k
+    | TDual ty_covar -> eval env coenv' e (fun v -> k @@ VInr (ty_covar, v))
     | _ ->
       let msg = Printf.sprintf "expected a dual type, got %s" (show_ty ty) in
       raise @@ EvalError msg)
+  else
+    eval env coenv' e
+    @@ fun v -> if is_free x (value_to_tm v) then k @@ VCoClosure (x, ty, v) else v
 
 and eval_coapp env coenv v1 v2 k =
   match v1 with
-  | VCoClosure (x, _, v, _coenv') ->
+  | VCoClosure (x, _, v) ->
     let e = subst x v2 (value_to_tm v) in
-    eval env coenv e @@ fun v -> k v
+    eval env coenv e k
   | VInl (ty, v) ->
     (match v2 with
      | VVar x ->
@@ -160,11 +161,11 @@ and eval_coapp env coenv v1 v2 k =
      | _ ->
        let msg = Printf.sprintf "expected a covariable, got %s" (show_value v1) in
        raise @@ EvalError msg)
-  | VInr (_ty, v) ->
+  | VInr (ty, v) ->
     (match v2 with
      | VVar x ->
        (match CoEnv.find_opt x coenv with
-        | Some k' -> eval env coenv (value_to_tm (k v)) k'
+        | Some k' -> k' @@ VInr (ty, k v)
         | None ->
           let msg = Printf.sprintf "unbound covariable %s" (show_value v2) in
           raise @@ EvalError msg)
@@ -172,6 +173,6 @@ and eval_coapp env coenv v1 v2 k =
        let msg = Printf.sprintf "expected a covariable, got %s" (show_value v1) in
        raise @@ EvalError msg)
   | _ ->
-    let msg = Printf.sprintf "expected a sum, got %s" (show_value v1) in
+    let msg = Printf.sprintf "expected a coclosure or a sum, got %s" (show_value v1) in
     raise @@ EvalError msg
 ;;

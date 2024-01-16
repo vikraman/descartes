@@ -85,7 +85,7 @@ type value =
   | VClosure of string * ty * tm * value Env.t
   | VInl of ty * value
   | VInr of ty * value
-  | VCoClosure of string * ty * value * tm CoEnv.t
+  | VCoClosure of string * ty * value
 
 let rec value_to_tm = function
   | VInt n -> Int n
@@ -95,7 +95,7 @@ let rec value_to_tm = function
   | VClosure (x, ty, tm, _) -> Abs (x, ty, tm)
   | VInl (ty, v) -> Inl (ty, value_to_tm v)
   | VInr (ty, v) -> Inr (ty, value_to_tm v)
-  | VCoClosure (x, ty, v, _) -> CoAbs (x, ty, value_to_tm v)
+  | VCoClosure (x, ty, v) -> CoAbs (x, ty, value_to_tm v)
 ;;
 
 let pp_value fmt v = pp_tm fmt (value_to_tm v)
