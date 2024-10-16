@@ -3,9 +3,19 @@
 [![tests](https://github.com/vikraman/descartes/actions/workflows/workflow.yml/badge.svg)](https://github.com/vikraman/descartes/actions/workflows/workflow.yml)
 [![opam](https://github.com/vikraman/descartes/actions/workflows/opam-dependency-submission.yml/badge.svg)](https://github.com/vikraman/descartes/actions/workflows/opam-dependency-submission.yml)
 
-This is an implementation of the $\lambda\widetilde{\lambda}$ calculus.
+This is an Ocaml implementation of the $\lambda\widetilde{\lambda}$ calculus.
 
 ## Usage
+
+To build and test, use opam and dune:
+
+``` bash
+$ opam install . --deps-only --with-test
+$ opam exec -- dune build
+$ opam exec -- dune runtest
+```
+
+To use the repl:
 
 ```bash
 $ dune exec bin/main.exe
@@ -20,9 +30,12 @@ $ dune exec bin/main.exe
 ~> 1 : int
 ```
 
+The syntax closely follows the syntax used in the code samples in the paper.
+The test suite contains several examples.
+
 ## Acknowledgements
 
-gpt-4-1106
+gpt-4-1106 was used to generate the parser for the syntax of the language.
 
 ## Related
 
